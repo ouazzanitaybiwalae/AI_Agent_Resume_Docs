@@ -1,0 +1,6 @@
+anthropic
+tiktoken
+langchain
+langchain-anthropic
+python-dotenv
+pytest
