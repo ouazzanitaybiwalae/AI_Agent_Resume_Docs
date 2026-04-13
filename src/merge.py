@@ -3,12 +3,12 @@
 
 import os
 from typing import List
-from anthropic import Anthropic
+from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
 
-client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 MODEL = "claude-opus-4-5"
 
 SYSTEM_PROMPT = """Tu es un assistant expert en synthèse de documents.
@@ -94,16 +94,12 @@ def merge_summaries(
 
     prompt = build_merge_prompt(summaries, doc_type, instructions, output_format)
 
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=max_tokens,
-        system=SYSTEM_PROMPT,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
+    response = client.chat.completions.create(
+        model="llama3-8b-8192",
+        max_tokens=1000,
+        messages=[{"role": "user", "content": prompt}]
     )
-
-    final_summary = response.content[0].text.strip()
+    return response.choices[0].message.content.strip()
 
     if verbose:
         print(f"  ✓ Résumé final généré ({len(final_summary)} caractères)")

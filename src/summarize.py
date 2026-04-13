@@ -3,13 +3,14 @@
 
 import os
 from typing import List, Optional
-from anthropic import Anthropic
 from dotenv import load_dotenv
+from groq import Groq
+
 
 load_dotenv()
 
 # Client Anthropic
-client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # Modèle Claude à utiliser
 MODEL = "claude-opus-4-5"
@@ -64,16 +65,12 @@ def summarize_single_chunk(
     """
     prompt = build_summary_prompt(chunk, doc_type, instructions)
 
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=max_tokens,
-        system=SYSTEM_PROMPT,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
+    response = client.chat.completions.create(
+        model="llama3-8b-8192",
+        max_tokens=1000,
+        messages=[{"role": "user", "content": prompt}]
     )
-
-    return response.content[0].text.strip()
+    return response.choices[0].message.content.strip()
 
 
 def summarize_chunks(
