@@ -1,6 +1,11 @@
-anthropic
-tiktoken
 langchain
 langchain-anthropic
 python-dotenv
 pytest
+anthropic>=0.25.0
+tiktoken>=0.6.0
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+pdfplumber>=0.11.0
+python-docx>=1.1.0
