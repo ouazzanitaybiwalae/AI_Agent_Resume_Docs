@@ -1,4 +1,5 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
+from typing import Optional
 from file_reader import read_file
 from summarizer import summarize_text
 
@@ -9,8 +10,12 @@ def hello():
     return {"message": "API opérationnelle"}
 
 @app.post("/summarize")
-async def summarize(file: UploadFile = File(...)):
-
+async def summarize(
+    file: UploadFile = File(...),
+    doc_type: Optional[str] = Form("général"),
+    instructions: Optional[str] = Form(""),
+    output_format: Optional[str] = Form("structuré"),
+):
     content = await file.read()
 
     try:
@@ -18,7 +23,12 @@ async def summarize(file: UploadFile = File(...)):
     except ValueError as e:
         return {"error": str(e)}
 
-    summary = summarize_text(text)
+    summary = summarize_text(
+        text=text,
+        doc_type=doc_type,
+        instructions=instructions,
+        output_format=output_format,
+    )
 
     return {
         "filename": file.filename,
