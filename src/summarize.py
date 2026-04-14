@@ -37,7 +37,7 @@ def summarize_single_chunk(
     prompt = build_summary_prompt(chunk, doc_type, instructions)
 
     response = client.chat.completions.create(
-        model="llama3-8b-8192",
+        model=MODEL,
         max_tokens=1000,
         messages=[{"role": "user", "content": prompt}]
     )

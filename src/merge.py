@@ -59,7 +59,7 @@ def merge_summaries(
     prompt = build_merge_prompt(summaries, doc_type, instructions, output_format)
 
     response = client.chat.completions.create(
-        model="llama3-8b-8192",
+        model=MODEL,
         max_tokens=1000,
         messages=[{"role": "user", "content": prompt}]
     )
