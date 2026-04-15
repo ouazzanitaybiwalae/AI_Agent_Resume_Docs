@@ -1,120 +1,92 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import Header from './components/Header'
+import UploadForm from './components/UploadForm'
+import DocTypeSelect from './components/DocTypeSelect'
+import Loader from './components/Loader'
+import SummaryDisplay from './components/SummaryDisplay'
 import './App.css'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [file, setFile] = useState(null)
+  const [options, setOptions] = useState({
+    style: 'abstractif',
+    length: 'moyen',
+    chunk: 'paragraphs',
+  })
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState(null)
+
+  const handleSubmit = async () => {
+    if (!file) return
+    setLoading(true)
+    setError(null)
+    setResult(null)
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('style', options.style)
+    formData.append('target_length', options.length)
+    formData.append('chunk_method', options.chunk)
+
+    try {
+      const res = await fetch(`${API_URL}/summarize`, {
+        method: 'POST',
+        body: formData,
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Erreur inconnue.' }))
+        throw new Error(err.detail || `Erreur ${res.status}`)
+      }
+      const data = await res.json()
+      setResult(data)
+    } catch (e) {
+      setError(e.message.includes('fetch')
+        ? `Impossible de joindre l'API sur ${API_URL}. Vérifiez que le serveur tourne.`
+        : e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleReset = () => {
+    setFile(null)
+    setResult(null)
+    setError(null)
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="app">
+      <Header />
 
-      <div className="ticks"></div>
+      <main className="main">
+        {!result ? (
+          <>
+            <UploadForm file={file} setFile={setFile} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+            <DocTypeSelect options={options} setOptions={setOptions} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+            {error && (
+              <div className="error-box">{error}</div>
+            )}
+
+            <button
+              className="btn-submit"
+              onClick={handleSubmit}
+              disabled={!file || loading}
+            >
+              {loading ? 'Traitement en cours…' : 'Résumer le document'}
+            </button>
+
+            {loading && <Loader />}
+          </>
+        ) : (
+          <SummaryDisplay result={result} onReset={handleReset} />
+        )}
+      </main>
+    </div>
   )
 }
 
