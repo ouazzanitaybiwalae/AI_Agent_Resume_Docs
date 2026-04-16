@@ -2,8 +2,17 @@ from fastapi import FastAPI, UploadFile, File, Form
 from typing import Optional
 from file_reader import read_file
 from summarizer import summarize_text
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # URL de votre frontend Vite
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def hello():
