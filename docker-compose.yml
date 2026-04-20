@@ -1,23 +1,22 @@
 services:
   api:
-    build:
-      context: ./api
-      dockerfile: Dockerfile
+    build: ./api
     ports:
       - "8000:8000"
     env_file:
       - ./api/.env
     volumes:
       - ./api:/app
+      - ./src:/src
+    environment:
+      - PYTHONPATH=/app:/src
     networks:
       - app-network
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    build: ./frontend
     ports:
-      - "3000:80"
+      - "5173:5173"
     depends_on:
       - api
     networks:
