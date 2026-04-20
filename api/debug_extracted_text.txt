@@ -1,0 +1,62 @@
+Année universitaire: 2025 2026 Rapport de Mini Projet : Résumeur de ELBIDALI Wissal GHANNAM Yousra OUAZZANI TAYBI Walae
+
+1.
+Présentation du Projet Ce projet consiste à développer un agent intelligent de résumé automatique de documents.
+L utilisateur uploade un fichier (PDF, DOCX ou TXT), choisit le type de document et le style de résumé, et l agent produit un résumé structuré adapté en quelques secondes.
+Le défi central est la limite de contexte des LLMs : un modèle ne peut pas traiter un document de 50 pages en une seule requête.
+Le système résout ce problème en découpant le document en blocs, en résumant chaque bloc indépendamment, puis en fusionnant les résumés partiels en un résumé final cohérent c est le pattern map-reduce appliqué au NLP. 2.
+Architecture du Système Le système suit une architecture trois-tiers où chaque couche a une responsabilité strictement délimitée.
+La communication entre les couches se fait via des appels HTTP standard (REST).
+Point de conception important : la fonction run_full_pipeline() dans merge.py est le seul point de contact entre l API et le pipeline NLP.
+L API appelle cette fonction et reçoit un dictionnaire structuré contenant le résumé, les métriques, le nombre de chunks et l évaluation LLM.
+
+3.
+Pipeline de Traitement Les 5 Étapes Le pipeline suit fidèlement les 5 étapes demandées dans le sujet.
+Voici le détail de chaque étape avec le fichier source correspondant.
+Étape 1 Ingestion (api file_reader.py) Le fichier uploadé est lu depuis ses bytes en mémoire, sans stockage permanent sur disque.
+Trois formats sont supportés : PDF : extraction page par page via PyMuPDF (fitz.open page.get_text()).
+Chaque page est préfixée Page N .
+DOCX : parcours des doc.paragraphs via python-docx, concaténation du texte non vide.
+TXT MD : lecture directe avec tentative successive de 3 encodages (UTF-8 Latin-1 CP1252).
+Cas limite géré : si le PDF est scanné (image sans texte), PyMuPDF ne retourne rien et une ValueError explicite est levée, retournée à l utilisateur via l API.
+
+Étape 2 Découpage (src chunk_text.py) La bibliothèque tiktoken (encodage cl100k_base) compte le nombre exact de tokens.
+Si le document dépasse 3 000 tokens par bloc, la fonction chunk_text_by_paragraphs() regroupe les paragraphes jusqu à la limite, en préservan la cohérence sémantique.
+Pour les paragraphes seuls qui dépassent la limite, un découpage forcé par tokens avec overlap de 100 tokens est appliqué.
+Étape 3 Résumé local (src summarize.py) Chaque chunk est envoyé séparément à l API Groq avec le modèle llama-3.3-70b-versatile.
+Un prompt système strict interdit toute invention d information et impose de répondre dans la langue du document.
+Le prompt utilisateur est construit dynamiquement en intégrant le type de document (financier, scientifique, etc.) et les instructions personnalisées.
+La réponse est limitée à 300 tokens par chunk pour rester concise.
+Étape 4 Fusion (src merge.py) Tous les résumés partiels sont envoyés en un seul appel au modèle.
+Le prompt de fusion impose: maximum 180-220 mots, suppression des répétitions, conservation de tous les chiffres et catégories importantes.
+La réponse est limitée à 400 tokens.
+Si le document ne génère qu un seul chunk, la fusion est ignorée et le résumé partiel est retourné directement.
+Étape 5 Formatage et Optimisation (src formatter.py) Un second appel LLM restructure le résumé brut selon le format exact attendu pour chaque type de document.
+C est ici que le résumé prend sa forme finale adaptée : Financier : Résumé exécutif tableau de bord (CA, marge, EBITDA, RSE, risques, Scientifique : sections Problématique Méthodologie Résultats Limites Mots-clés.
+Réunion : liste actionnable Décisions Tâches (Qui Quoi Quand) Points en suspens.
+Contrat : synthèse Parties Objet Obligations Dates Clauses de résiliation.
+Transcription : chronologie thématique par intervalles de temps.
+Technique : guide rapide Prérequis Installation Dépannage Liens.
+Le formatter applique également la post-processing de la Catégorie 3 : si des tableaux sont détectés, une note est ajoutée au résumé.
+Si des contradictions sont détectées, un avertissement est préfixé.
+Les termes techniques en langue étrangère sont signalés.
+
+4.
+Outils, Métriques et Résultats 4.1 Stack technologique Résumé, fusion, formatage, évaluation (4 appels Comptage exact de tokens (cl100k_base) API REST Endpoint POST summarize avec validation Extraction texte page par page Lecture DOCX Extraction paragraphes Word UI avec drag drop, métriques, reprocessing à Conteneurisation API frontend en une commande Tests unitaires des 3 catégories (Cat1, Cat2, Cat3) 4.2 Métriques d évaluation (Catégorie 4) Le système calcule deux niveaux de métriques après chaque résumé : Métriques statistiques (src metrics.py) : Taux de compression : ratio tokens_résumé tokens_original.
+Un bon résumé atteint 20 Score de couverture : pourcentage de mots porteurs de sens ( 4 lettres, hors stopwords) du document original retrouvés dans le résumé.
+Indicateur d exhaustivité.
+Concision_ok : booléen vrai si le taux de compression est 40%.
+Évaluation LLM (src evaluator_llm.py) : Un quatrième appel au modèle évalue le résumé produit selon 4 critères notés de 1 à 10: fidélité (pas d hallucination), couverture des idées clés, absence d hallucination, et clarté.
+Ces scores sont affichés dans une section dédiée de l interface.
+
+4.3 Fonctionnalité avancée : reprocessing à chaud L interface React permet de changer le style (abstractif extractif), le prompt type ou la longueur directement depuis la page de résultat, sans reuploader le fichier.
+Le fichier est conservé en mémoire dans le state React et le FormData est reconstruit automatiquement pour un nouvel appel API.
+Cette fonctionnalité est implémentée dans le composant SummaryDisplay via la fonction 5.
+Résultats, Limites et Perspectives 5.1 Ce que le système accomplit Traitement de documents sans limite de taille théorique grâce au chunking adaptatif. 7 types de documents supportés avec formats de résumé spécifiques à chacun. 6 types de prompts utilisateurs (Cat2) : 5 puces, non-expert, hiérarchique, comparaison, Détection automatique de 4 cas limites (Cat3) : documents longs, tableaux, contradictions, Évaluation double : métriques statistiques évaluation LLM sur 4 critères.
+Déploiement conteneurisé : docker-compose up --build lance l ensemble du système. 5.2 Limites identifiées PDFs scannés (images) : PyMuPDF ne peut extraire que du texte natif.
+Les PDFs scannés retournent une erreur.
+Tableaux et graphiques : seul le texte est extrait.
+Les données structurées visuelles sont Dépendance externe : l API Groq nécessite une connexion internet et une clé API valide.
+L évaluation LLM représente un 4ème appel API par résumé, ce qui augmente le temps de Intégration d OCR (Tesseract) pour traiter les PDFs scannés.
+Cache des résumés déjà calculés pour éviter de retraiter le même document.
+Ajout d un endpoint compare pour comparer deux documents en parallèle.
