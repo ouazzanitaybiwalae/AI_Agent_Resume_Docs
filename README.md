@@ -8,14 +8,28 @@ Projet IA — Résumé automatique de documents via un pipeline NLP et une API R
 
 ```
 Document (PDF/DOCX/TXT)
-        ↓
- Frontend React — Upload + Affichage
-        ↓ POST /summarize
- API FastAPI — Lecture fichier
-        ↓ run_full_pipeline()
- Pipeline NLP — Chunk → Summarize → Merge
-        ↓
-     Résumé final
+                      ↓
+Frontend React (port 5173)
+• Upload + instructions
+• Choix : Extractif / Abstractif
+                       ↓ POST /summarize
+API FastAPI (port 8000)
+• Lecture fichier → file_reader
+• Détection type → detect_doc_type
+                       ↓
+┌──────────────────────┴──────────────────────┐
+↓                                            ↓
+【EXTRACTIF】                        【ABSTRACTIF】
+api/summarizer.py              src/summarize.py
+• score_sentences()       • chunk_text_by_paragraphs()
+• extractive_summary()        • summarize_chunks()
+• apply_user_constraints()    • Groq (LLaMA 3.3 70B)
+↓                                     ↓
+└──────────────┬───────────────────────┘
+↓
+format_summary.py
+↓
+Résumé final
 ```
 
 ---
