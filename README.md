@@ -60,7 +60,7 @@ npm install
 npm run dev
 ```
 
-L'app est accessible sur `http://localhost:3000`
+L'app est accessible sur `http://localhost:5173`
 
 ---
 
@@ -71,9 +71,7 @@ docker-compose up --build
 ```
 
 - API : `http://localhost:8000`
-- Frontend : `http://localhost:3000`
-- Docs API : `http://localhost:8000/docs`
-
+- Frontend : `http://localhost:5173`
 ---
 
 ## Tests
